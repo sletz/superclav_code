@@ -38,7 +38,7 @@ with {
                                 :> /(sqrt(N)) : _;
 };
 
-akjrev_demo = _,_ <: ef.dryWetMixerConstantPower(wet*0.9, akjrev(cutoff,feedback)) :> _,_
+akjrev_demo = _,_ : mid_side <: ef.dryWetMixerConstantPower(wet*0.9, akjrev(cutoff,feedback)) :> _,_
 with {
     cutoff   = hslider("[midi:ctrl 45]cutoff",7563,500,12000,90.55118);
     feedback = hslider("[midi:ctrl 46]feedback",0.55,0,1,0.00787);
