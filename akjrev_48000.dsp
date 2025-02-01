@@ -6,7 +6,7 @@ with {
     diff  = l-r;
     side  = diff*width;
     out   = mid+side, mid-side;
-    width = hslider("[midi:ctrl 42]hass_width",1,0,1,0.007874);
+    width = hslider("stereo_width[midi:ctrl 42]",1,0,1,0.007874);
 };
 
 // currently unused via being set to 0 modfactor in 'akjrev'
@@ -40,7 +40,7 @@ with {
 
 akjrev_demo = _,_ : mid_side <: ef.dryWetMixerConstantPower(wet*0.9, akjrev(cutoff,feedback)) :> _,_
 with {
-    cutoff   = hslider("[midi:ctrl 45]cutoff",7563,500,12000,90.55118);
-    feedback = hslider("[midi:ctrl 46]feedback",0.55,0,1,0.00787);
-    wet      = hslider("[midi:ctrl 47]wet",0.5,0,1,0.01);
+    cutoff   = hslider("cutoff[midi:ctrl 45]",7563,500,12000,90.55118);
+    feedback = hslider("feedback[midi:ctrl 46]",0.55,0,1,0.00787);
+    wet      = hslider("wet[midi:ctrl 47]",0.5,0,1,0.01);
 };

@@ -144,7 +144,7 @@ with {
     // stereo imaging
     frq_smps      = ma.SR/freq;
     frq_smp_quad  = frq_smps/4;
-    hass_delay    = hslider("[midi:ctrl 41]hass_delay]",0.03,0.01,0.04,0.0023622);
+    hass_delay    = hslider("hass_delay[midi:ctrl 41]",0.03,0.01,0.04,0.0023622);
     hass_delsmps  = ma.SR*hass_delay;
     del_units     = floor(hass_delsmps/frq_smps);
     delay_smps    = (frq_smps*del_units)+frq_smp_quad;
