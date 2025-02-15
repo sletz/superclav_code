@@ -1,13 +1,51 @@
+
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Superclav Widget</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(45deg, #f3f3f3, #e0e0e0);
+        margin: 0;
+        padding: 20px;
+      }
 
-<body>
+      center {
+        margin: 20px auto;
+      }
+
+      h1 {
+        color: #333;
+        font-size: 2.5em;
+        text-align: center;
+      }
+
+      p {
+        color: #555;
+        font-size: 1.2em;
+        text-align: center;
+      }
+
+      faust-widget {
+        display: block;
+        margin: 30px auto;
+        width: 80%;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        background-color: #fff;
+      }
+    </style>
+  </head>
+  <body>
     <center>
-        <H1>Superclav can directly be tested in this widget </H1>
-        <P>Click on the widget upper-left button to start, connect your MIDI keyboard and play.</P>
+      <h1>Superclav can directly be tested in this widget</h1>
+      <p>Click on the widget upper-left button to start, connect your MIDI keyboard and play.</p>
     </center>
-
     <center>
+      <center>
         <faust-widget>
             <!--
 import("stdfaust.lib");
@@ -211,10 +249,7 @@ process = superclav : *(0.5),*(0.5);
 effect = akjrev_demo;
 -->
         </faust-widget>
-        <script
-            src="https://cdn.jsdelivr.net/npm/@grame/faust-web-component@0.4.5/dist/faust-web-component.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@grame/faust-web-component@0.4.5/dist/faust-web-component.js"></script>
     </center>
-
-</body>
-
+  </body>
 </html>
