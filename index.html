@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Superclav Widget</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(45deg, #f3f3f3, #e0e0e0);
+        margin: 0;
+        padding: 20px;
+      }
+
+      center {
+        margin: 20px auto;
+      }
+
+      h1 {
+        color: #333;
+        font-size: 2.5em;
+        text-align: center;
+      }
+
+      p {
+        color: #555;
+        font-size: 1.2em;
+        text-align: center;
+      }
+
+      faust-widget {
+        display: block;
+        margin: 30px auto;
+        width: 80%;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        background-color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <center>
+      <h1>Superclav can directly be tested in this widget</h1>
+      <p>Click on the widget upper-left button to start, connect your MIDI keyboard and play.</p>
+    </center>
+    <center>
+      <center>
+        <faust-widget>
+            <!--
+import("stdfaust.lib");
+
+declare options "[midi:on][nvoices:16]";
+
+mid_side(l,r) = out : fi.dcblocker,fi.dcblocker
+with {
+    mid   = l+r;
+    diff  = l-r;
+    side  = diff*width;
+    out   = mid+side, mid-side;
+    width = hslider("stereo_width[midi:ctrl 42]",1,0,1,0.007874);
+};
+
+// currently unused via being set to 0 modfactor in 'akjrev'
+// resulting sound was too smeared in pitch...
+smear_delay(del,modfactor) =
+  _ : de.sdelay(MAXDELAY,IT,del_len)
+with {
+    MAXDELAY =  8192;
+    IT       =  1024;
+    del_len  =  del + del_mod;
+    del_mod  =  no.noise : ba.sAndH(ba.pulse(14000)) : ba.line(14000)
+                : _*(del*modfactor);
+};
+
+akjrev(cutoff,feedback)
+    = (si.bus(2*N) :> si.bus(N) : delaylines(N)) ~
+      (delayfilters(N,cutoff,feedback) : feedbackmatrix(N))
+with {
+    N = 16;
+    delays = (2113,2267,2411,2543,2663,2851,2957,3089,3271,3449,3593,3739,3863,4003,4159,4327);
+    delayval(i) = ba.take(i+1,delays);
+    delaylines(N) = par(i,N,(smear_delay(delayval(i),0.000)));  // 0.0004
+    delayfilters(N,cutoff,feedback) = par(i,N,filter(i,cutoff,feedback));
+    feedbackmatrix(N) = bhadamard(N);
+    bhadamard(2) = si.bus(2) <: +,-;
+    bhadamard(n) = si.bus(n) <: (si.bus(n):>si.bus(n/2)) , ((si.bus(n/2),(si.bus(n/2):par(i,n/2,*(-1)))) :> si.bus(n/2))
+                   : (bhadamard(n/2) , bhadamard(n/2));
+    filter(i,cutoff,feedback) = fi.lowpass(1,cutoff) : *(feedback)
+                                :> /(sqrt(N)) : _;
+};
+
+akjrev_demo = _,_ : mid_side <: ef.dryWetMixerConstantPower(wet*0.9, akjrev(cutoff,feedback)) :> _,_
+with {
+    cutoff   = hslider("cutoff[midi:ctrl 45]",7563,500,12000,90.55118);
+    feedback = hslider("feedback[midi:ctrl 46]",0.55,0,1,0.00787);
+    wet      = hslider("wet[midi:ctrl 47]",0.5,0,1,0.01);
+};
+
+gate = button("v:midi/[0]gate[hidden:1]");
+gain = hslider("v:midi/[1]gain[hidden:1]",0.1,0,1,0.01);
+mkey = hslider("v:midi/[2]key",60,36,96,1);
+
+freq = midikey2hz(mkey-36)
+with {
+    ///////////////////////////////////////////////////////////////////////////
+    // johnson-secor_rwt.scl (Johnson/Secor Rational Well-Temperment with    //
+    // five 24/19 major thirds)                                              //
+    //                                                                       //
+    // It's laid out here in a 4-octave keyboard setup, perfect for a little //
+    // 49-key controller to simulate a 'clav' sound with an authentic        //
+    // range/gamut. As a result, MIDI key #36 should map to index 0 in the   //
+    // tables below. This is why we subtract 36 in the 'mkey' declarations.  //
+    ///////////////////////////////////////////////////////////////////////////
+    myhzvals = waveform{
+        65.25,
+        68.875,
+        73.08402777777777715,
+        77.3333333333333286,
+        81.7890625,
+        87,
+        91.8333333333333286,
+        97.6484375,
+        103.3125,
+        109.3390624999999972,
+        116,
+        122.4444444444444429,
+        130.5,
+        137.75,
+        146.1680555555555543,
+        154.6666666666666572,
+        163.578125,
+        174,
+        183.6666666666666572,
+        195.296875,
+        206.625,
+        218.6781249999999943,
+        232,
+        244.8888888888888857,
+        261,
+        275.5,
+        292.3361111111111086,
+        309.3333333333333144,
+        327.15625,
+        348,
+        367.3333333333333144,
+        390.59375,
+        413.25,
+        437.3562499999999886,
+        464,
+        489.7777777777777715,
+        522,
+        551,
+        584.6722222222222172,
+        618.6666666666666288,
+        654.3125,
+        696,
+        734.6666666666666288,
+        781.1875,
+        826.5,
+        874.7124999999999773,
+        928,
+        979.5555555555555429,
+        1044
+    };
+    midikey2hz(mk) = myhzvals,int(mk) : rdtable;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Basic params!                                                             //
+//                                                                           //
+// You will notice that the older version had nine dials, and this has now   //
+// been reduced to just a master volume, basically, b/c I wanted to find     //
+// ideal settings, and then "set it and forget it". A factor contributing to //
+// parameter reduction was that I went back to a more basic design with the  //
+// following ideas in mind:                                                  //
+//                                                                           //
+//    * No additional vco wave, just pink noise in the excitation            //
+//    * Bringing a filter back into the main resonator feedback. This gives  //
+//      a more "naturalistic" decay character, as it corresponds to hi-freq  //
+//      energy loss in a string model, and allows me not to have need for a  //
+//      secondary post-string-model filter to gain back naturalism.          //
+//    * As mentioned, after empirical experimentation, lock in values, in so //
+//      doing, reducing the need for a dial to tweak to get a good sound.    //
+//                                                                           //
+// I wanted the lowest note to ring for ~10 seconds, and the hightest for    //
+// just about ~3-4 seconds. This suited the music and wasn't really based on //
+// looking to precisely emulated a real clavichord. In addition, I wanted to //
+// have the ring of the note be a certain brightness that sounded good while //
+// also staying within those time contraints. And brightness and decay being //
+// related, this meant bringing a "sustain" parameter to assist the decay    //
+// to be slightly faster, because the slightly brighter sound I wanted would //
+// naturally ring a bit longer otherwise...                                  //
+///////////////////////////////////////////////////////////////////////////////
+bright_C1  = 97;     // not magic, emprically getting appropriate brightness and decay
+bright_C5  = 67;     // same thing
+sustain    = 0.9984; // adjustment that allows note to stay bright but decay a bit faster
+master_vol = hslider("master_vol[midi:ctrl 48]",0.5,0,1,0.007874);
+
+/////////////////////////////////////////
+// The Superclav instrument definition //
+/////////////////////////////////////////
+superclav = excitation : fi.highpass(2,35) : resonator(delsmps)*env*master_vol
+            <: _,de.sdelay(2048,2048,delay_smps)
+with {
+    //////////////////////////////////////////////////////////
+    // Convert desired voice frequency to number of samples //
+    //                                                      //
+    // Think of this as frequency -> string (delay) length  //
+    //////////////////////////////////////////////////////////
+    delsmps        = ma.SR/freq;
+    /////////////////////////////////////////////////////////////
+    // Envelope params, used by excition and wrapping envelope //
+    /////////////////////////////////////////////////////////////
+    attack_numer   = 0.0125+(mkey-36)*(0.0125/48); // kbd tracking
+    attack         = attack_numer/freq;
+    decay          = attack;
+    exc_rel        = attack;
+    release        = attack*6;
+    ///////////////////////////
+    // Pink-noise excitation //
+    ///////////////////////////
+    exc_factor     = 1/(2.0+(mkey-36)*(-1/48)); // kbd tracking
+    exc_window     = ba.spulse(int(delsmps)*exc_factor,gate);
+    exc_env        = en.are(attack,exc_rel,gate);
+    inv_gain       = 1-(gain*0.5+0.3);                // make noise respond to velocity/gain
+    exc_filt       = *(1-inv_gain) : + ~ *(inv_gain); // filter for velocity response
+    excitation     = no.pink_noise*gain*exc_env*exc_window : exc_filt;
+    /////////////////////////////////////
+    // Resonator filter and its params //
+    /////////////////////////////////////
+    brightness     = bright_C1+(bright_C5-bright_C1)*((mkey-36)*(1/48));
+    tau            = 1/((freq*2*ma.PI)+(freq*brightness*gain*2*ma.PI));
+    pole_val       = ba.tau2pole(tau);
+    flt            = *(1-pole_val) : + ~ *(pole_val); // standard 1-pole lowpass equation
+    ///////////////////////////////////////
+    // The actual string model resonator //
+    ///////////////////////////////////////
+    resonator(ds)  = (+ : de.fdelay2(4096, ds-1)) ~ (flt*sustain) : fi.dcblocker;
+    ////////////////////////////////////////////////////////////
+    // Wrap it all in an anti-click and MIDI-playing envelope //
+    ////////////////////////////////////////////////////////////
+    env            = en.adsre(attack,0,1,release,gate);
+    //////////////////////////////////////////
+    // Stereo imaging using the Haas Effect //
+    //////////////////////////////////////////
+    frq_smps       = ma.SR/freq;
+    frq_smp_quad   = frq_smps/4;
+    hass_delay     = hslider("hass_delay[midi:ctrl 41]",0.03,0.01,0.04,0.0023622);
+    hass_delsmps   = ma.SR*hass_delay;
+    del_units      = floor(hass_delsmps/frq_smps);
+    delay_smps     = (frq_smps*del_units)+frq_smp_quad;
+};
+
+process = superclav;
+effect  = akjrev_demo;
+-->
+        </faust-widget>
+      <script src="https://cdn.jsdelivr.net/npm/@grame/faust-web-component@0.4.5/dist/faust-web-component.js"></script>
+    </center>
+  </body>
+</html>
