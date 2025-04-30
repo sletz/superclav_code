@@ -193,14 +193,14 @@ with {
 // naturally ring a bit longer otherwise...                                  //
 ///////////////////////////////////////////////////////////////////////////////
 bright_C1  = 97;     // not magic, emprically getting appropriate brightness and decay
-bright_C5  = 67;     // same thing
-sustain    = 0.9984; // adjustment that allows note to stay bright but decay a bit faster
+bright_C5  = 73;     // same thing
+sustain    = 0.9985; // adjustment that allows note to stay bright but decay a bit faster
 master_vol = hslider("master_vol[midi:ctrl 48]",0.5,0,1,0.007874);
 
 /////////////////////////////////////////
 // The Superclav instrument definition //
 /////////////////////////////////////////
-superclav = excitation : fi.highpass(2,35) : resonator(delsmps)*env*master_vol
+superclav = excitation : fi.highpass(2,35) : resonator(delsmps)*env*master_vol*0.5
             <: _,de.sdelay(2048,2048,delay_smps)
 with {
     //////////////////////////////////////////////////////////
@@ -212,25 +212,37 @@ with {
     /////////////////////////////////////////////////////////////
     // Envelope params, used by excition and wrapping envelope //
     /////////////////////////////////////////////////////////////
-    attack_numer   = 0.0125+(mkey-36)*(0.0125/48); // kbd tracking
-    attack         = attack_numer/freq;
-    decay          = attack;
+    attack_numer   = 0.0125+(mkey-36)*(0.025/48);             // kbd tracking
+    attack         = (attack_numer/freq)*0.25;
     exc_rel        = attack;
     release        = attack*6;
     ///////////////////////////
     // Pink-noise excitation //
     ///////////////////////////
-    exc_factor     = 1/(2.0+(mkey-36)*(-1/48)); // kbd tracking
+    exc_factor     = 1/(2.0+(mkey-36)*(-1/48));               // kbd tracking
+    //////////////////////////////////////////////////////////////////////////
+    // NOISE TWEAK - I was playing around with different noise color curves //
+    // w/re: keyboard tracking. Ultimately, I do think simple pink noise    //
+    // all the way is the best, bu YMMV. I leave this here as an indicator  //
+    // of my thought process...                                             //
+    //////////////////////////////////////////////////////////////////////////
+    //exc_col_noi    = (-1/2)+((mkey-36)*(1/48)*(1/12));      // kbd track noise
+                                                              // (i.e. make it slighter brighter towards the top)
+    exc_col_noi    = -1/2;                                    // (ultimately, I decide to stick with pink noise all the way!)
+    /////////////////////
+    // END NOISE TWEAK //
+    /////////////////////
     exc_window     = ba.spulse(int(delsmps)*exc_factor,gate);
     exc_env        = en.are(attack,exc_rel,gate);
-    inv_gain       = 1-(gain*0.5+0.3);                // make noise respond to velocity/gain
-    exc_filt       = *(1-inv_gain) : + ~ *(inv_gain); // filter for velocity response
-    excitation     = no.pink_noise*gain*exc_env*exc_window : exc_filt;
+    adj_gain       = (gain*0.875)+0.125;                      // keep gain > 0.125 to reduce stray weak hits
+    inv_gain       = 1-adj_gain;                              // invert for filter response equation
+    exc_filt       = *(1-inv_gain) : + ~ *(inv_gain);         // filter for velocity response
+    excitation     = no.colored_noise(8,exc_col_noi)*adj_gain*exc_env*exc_window : exc_filt;
     /////////////////////////////////////
     // Resonator filter and its params //
     /////////////////////////////////////
     brightness     = bright_C1+(bright_C5-bright_C1)*((mkey-36)*(1/48));
-    tau            = 1/((freq*2*ma.PI)+(freq*brightness*gain*2*ma.PI));
+    tau            = 1/((freq*4*ma.PI)+(freq*brightness*adj_gain*2*ma.PI));
     pole_val       = ba.tau2pole(tau);
     flt            = *(1-pole_val) : + ~ *(pole_val); // standard 1-pole lowpass equation
     ///////////////////////////////////////
@@ -240,13 +252,13 @@ with {
     ////////////////////////////////////////////////////////////
     // Wrap it all in an anti-click and MIDI-playing envelope //
     ////////////////////////////////////////////////////////////
-    env            = en.adsre(attack,0,1,release,gate);
+    env            = en.adsre(attack*0.5,0,1,release,gate); // N.B. added the *0.5 on 2025-04-20
     //////////////////////////////////////////
     // Stereo imaging using the Haas Effect //
     //////////////////////////////////////////
     frq_smps       = ma.SR/freq;
     frq_smp_quad   = frq_smps/4;
-    hass_delay     = hslider("hass_delay[midi:ctrl 41]",0.03,0.01,0.04,0.0023622);
+    hass_delay     = hslider("hass_delay[midi:ctrl 41]",0.03,0.00,0.04,0.00031496);
     hass_delsmps   = ma.SR*hass_delay;
     del_units      = floor(hass_delsmps/frq_smps);
     delay_smps     = (frq_smps*del_units)+frq_smp_quad;
