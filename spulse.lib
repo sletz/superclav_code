@@ -1,0 +1,10 @@
+import("stdfaust.lib");
+
+spulse(n, trig) = trig : trigger(n)
+with {
+    upfront(x) = x > x';    // detect rising edge
+    reset = upfront(trig);  // reset signal
+    decay(n, x) = ba.if(reset, 0, x - (x>0.0)/n);   // decay the pulse, possibly using reset to restart the pulse
+    release(n) = + ~ decay(n);
+    trigger(n) = upfront : release(n) : >(0.0);
+};

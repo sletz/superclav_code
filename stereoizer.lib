@@ -1,0 +1,17 @@
+import("stdfaust.lib");
+
+stereoizer(width) = _,_ : procL, procR
+with {
+  procL(x) = (x * (1 - width)) + (allpL(x) * width);
+  procR(y) = (y * (1 - width)) + (allpR(y) * width);
+  /////////////////////////////////
+  // SR = 48000 for all of these //
+  /////////////////////////////////
+  apvalL1  = 127;
+  apvalL2  = 157;
+  apvalR1  = 211;
+  apvalR2  = 239;
+  apFeed   = 0.7;
+  allpL(x) = x : fi.allpass_comb(1024, apvalL1, apFeed) : fi.allpass_comb(1024, apvalL2, apFeed);
+  allpR(y) = y : fi.allpass_comb(1024, apvalR1, apFeed) : fi.allpass_comb(1024, apvalR2, apFeed);
+};

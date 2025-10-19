@@ -52,6 +52,22 @@ import("stdfaust.lib");
 
 declare options "[midi:on][nvoices:16]";
 
+stereoizer(width) = _,_ : procL, procR
+with {
+  procL(x) = (x * (1 - width)) + (allpL(x) * width);
+  procR(y) = (y * (1 - width)) + (allpR(y) * width);
+  /////////////////////////////////
+  // SR = 48000 for all of these //
+  /////////////////////////////////
+  apvalL1  = 127;
+  apvalL2  = 157;
+  apvalR1  = 211;
+  apvalR2  = 239;
+  apFeed   = 0.7;
+  allpL(x) = x : fi.allpass_comb(1024, apvalL1, apFeed) : fi.allpass_comb(1024, apvalL2, apFeed);
+  allpR(y) = y : fi.allpass_comb(1024, apvalR1, apFeed) : fi.allpass_comb(1024, apvalR2, apFeed);
+};
+
 mid_side(l,r) = out : fi.dcblocker,fi.dcblocker
 with {
     mid   = l+r;
@@ -95,6 +111,15 @@ with {
     cutoff   = hslider("cutoff[midi:ctrl 45]",7563,500,12000,90.55118);
     feedback = hslider("feedback[midi:ctrl 46]",0.55,0,1,0.00787);
     wet      = hslider("wet[midi:ctrl 47]",0.5,0,1,0.01);
+};
+
+spulse(n, trig) = trig : trigger(n)
+with {
+    upfront(x) = x > x';    // detect rising edge
+    reset = upfront(trig);  // reset signal
+    decay(n, x) = ba.if(reset, 0, x - (x>0.0)/n);   // decay the pulse, possibly using reset to restart the pulse
+    release(n) = + ~ decay(n);
+    trigger(n) = upfront : release(n) : >(0.0);
 };
 
 gate = button("v:midi/[0]gate[hidden:1]");
@@ -192,16 +217,16 @@ with {
 // to be slightly faster, because the slightly brighter sound I wanted would //
 // naturally ring a bit longer otherwise...                                  //
 ///////////////////////////////////////////////////////////////////////////////
-bright_C1  = 97;     // not magic, emprically getting appropriate brightness and decay
-bright_C5  = 73;     // same thing
-sustain    = 0.9985; // adjustment that allows note to stay bright but decay a bit faster
-master_vol = hslider("master_vol[midi:ctrl 48]",0.5,0,1,0.007874);
-
+bright_C1    = 97;     // not magic, emprically getting appropriate brightness and decay
+bright_C5    = 73;     // same thing
+sustain      = 0.9985; // adjustment that allows note to stay bright but decay a bit faster
+master_vol   = hslider("master_vol  [midi:ctrl 48]", 0.13, 0, 1, 0.007874);
+stereo_width = hslider("stereo_width[midi:ctrl 41]", 1.0, 0, 1, 0.007874);
 /////////////////////////////////////////
 // The Superclav instrument definition //
 /////////////////////////////////////////
 superclav = excitation : fi.highpass(2,35) : resonator(delsmps)*env*master_vol*0.5
-            <: _,de.sdelay(2048,2048,delay_smps)
+            <: stereoizer(stereo_width)
 with {
     //////////////////////////////////////////////////////////
     // Convert desired voice frequency to number of samples //
@@ -220,24 +245,26 @@ with {
     // Pink-noise excitation //
     ///////////////////////////
     exc_factor     = 1/(2.0+(mkey-36)*(-1/48));               // kbd tracking
-    //////////////////////////////////////////////////////////////////////////
-    // NOISE TWEAK - I was playing around with different noise color curves //
-    // w/re: keyboard tracking. Ultimately, I do think simple pink noise    //
-    // all the way is the best, bu YMMV. I leave this here as an indicator  //
-    // of my thought process...                                             //
-    //////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // NOISE TWEAK - I was playing around with different noise color curves  //
+    // w/re: keyboard tracking. Ultimately, I do think simple pink noise     //
+    // all the way is the best, but YMMV. I leave this here as an indicator  //
+    // of my thought process...                                              //
+    ///////////////////////////////////////////////////////////////////////////
     //exc_col_noi    = (-1/2)+((mkey-36)*(1/48)*(1/12));      // kbd track noise
                                                               // (i.e. make it slighter brighter towards the top)
     exc_col_noi    = -1/2;                                    // (ultimately, I decide to stick with pink noise all the way!)
     /////////////////////
     // END NOISE TWEAK //
     /////////////////////
-    exc_window     = ba.spulse(int(delsmps)*exc_factor,gate);
+    exc_window     = spulse(int(delsmps)*exc_factor,gate);
     exc_env        = en.are(attack,exc_rel,gate);
     adj_gain       = (gain*0.875)+0.125;                      // keep gain > 0.125 to reduce stray weak hits
     inv_gain       = 1-adj_gain;                              // invert for filter response equation
     exc_filt       = *(1-inv_gain) : + ~ *(inv_gain);         // filter for velocity response
-    excitation     = no.colored_noise(8,exc_col_noi)*adj_gain*exc_env*exc_window : exc_filt;
+    impulse_factor = (mkey-36)*(0.33/48);
+    impulse        = gate * adj_gain * impulse_factor : ba.impulsify;
+    excitation     = (no.colored_noise(8,exc_col_noi) + impulse) * (adj_gain*exc_env*exc_window) : exc_filt;
     /////////////////////////////////////
     // Resonator filter and its params //
     /////////////////////////////////////
@@ -253,15 +280,6 @@ with {
     // Wrap it all in an anti-click and MIDI-playing envelope //
     ////////////////////////////////////////////////////////////
     env            = en.adsre(attack*0.5,0,1,release,gate); // N.B. added the *0.5 on 2025-04-20
-    //////////////////////////////////////////
-    // Stereo imaging using the Haas Effect //
-    //////////////////////////////////////////
-    frq_smps       = ma.SR/freq;
-    frq_smp_quad   = frq_smps/4;
-    hass_delay     = hslider("hass_delay[midi:ctrl 41]",0.03,0.00,0.04,0.00031496);
-    hass_delsmps   = ma.SR*hass_delay;
-    del_units      = floor(hass_delsmps/frq_smps);
-    delay_smps     = (frq_smps*del_units)+frq_smp_quad;
 };
 
 process = superclav;
