@@ -100,8 +100,8 @@ with {
 // to be slightly faster, because the slightly brighter sound I wanted would //
 // naturally ring a bit longer otherwise...                                  //
 ///////////////////////////////////////////////////////////////////////////////
-bright_C1    = 97;     // not magic, emprically getting appropriate brightness and decay
-bright_C5    = 73;     // same thing
+bright_C1    = 89;     // not magic, emprically getting appropriate brightness and decay (was 97)
+bright_C5    = 67;     // same thing  (was 73)
 sustain      = 0.9985; // adjustment that allows note to stay bright but decay a bit faster
 master_vol   = hslider("master_vol  [midi:ctrl 48]", 0.13, 0, 1, 0.007874);
 stereo_width = hslider("stereo_width[midi:ctrl 41]", 1.0, 0, 1, 0.007874);
@@ -142,11 +142,11 @@ with {
     /////////////////////
     exc_window     = spulse(int(delsmps)*exc_factor,gate);
     exc_env        = en.are(attack,exc_rel,gate);
-    adj_gain       = (gain*0.875)+0.125;                      // keep gain > 0.125 to reduce stray weak hits
-    inv_gain       = 1-adj_gain;                              // invert for filter response equation
+    adj_gain       = (gain*gain*0.875)+0.125;                 // keep gain > 0.125 to reduce stray weak hits
+    inv_gain       = 1-gain;                                  // invert for filter response equation
     exc_filt       = *(1-inv_gain) : + ~ *(inv_gain);         // filter for velocity response
     impulse_factor = (mkey-36)*(0.33/48);
-    impulse        = gate * adj_gain * impulse_factor : ba.impulsify;
+    impulse        = gate*adj_gain*impulse_factor : ba.impulsify;
     excitation     = (no.colored_noise(8,exc_col_noi) + impulse) * (adj_gain*exc_env*exc_window) : exc_filt;
     /////////////////////////////////////
     // Resonator filter and its params //
