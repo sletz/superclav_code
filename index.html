@@ -220,18 +220,11 @@ with {
     // Pink-noise excitation //
     ///////////////////////////
     exc_factor     = 1/(2.0+(mkey-36)*(-1/48));               // kbd tracking
-    //////////////////////////////////////////////////////////////////////////
-    // NOISE TWEAK - I was playing around with different noise color curves //
-    // w/re: keyboard tracking. Ultimately, I do think simple pink noise    //
-    // all the way is the best, bu YMMV. I leave this here as an indicator  //
-    // of my thought process...                                             //
-    //////////////////////////////////////////////////////////////////////////
-    //exc_col_noi    = (-1/2)+((mkey-36)*(1/48)*(1/12));      // kbd track noise
-                                                              // (i.e. make it slighter brighter towards the top)
-    exc_col_noi    = -1/2;                                    // (ultimately, I decide to stick with pink noise all the way!)
-    /////////////////////
-    // END NOISE TWEAK //
-    /////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // Use pink noise for excitation (other noise curves were tested but     //
+    // pink noise provided the best timbre across the keyboard range)        //
+    ///////////////////////////////////////////////////////////////////////////
+    exc_col_noi    = -1/2;                                    // pink noise
     exc_window     = ba.spulse(int(delsmps)*exc_factor,gate);
     exc_env        = en.are(attack,exc_rel,gate);
     adj_gain       = (gain*0.875)+0.125;                      // keep gain > 0.125 to reduce stray weak hits
